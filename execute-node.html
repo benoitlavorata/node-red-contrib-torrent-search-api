@@ -1,0 +1,31 @@
+<script type="text/javascript">
+    RED.nodes.registerType('clearbit-execute', {
+        category: "enrichment",
+        defaults: {
+            name: { value: "Clearbit - Execute" },
+            host: { value: "", type: "clearbit-config" }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "white-globe.png",
+        color: "#a6bbcf",
+        label: function() {
+            return (this.name || "clearbit-execute")
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="clearbit-execute">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-host"><i class="icon-bookmark"></i> Config</label>
+        <input type="text" id="node-input-host">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="clearbit-execute">
+
+</script>
