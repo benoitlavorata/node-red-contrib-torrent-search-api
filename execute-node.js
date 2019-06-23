@@ -7,16 +7,14 @@ module.exports = function(RED) {
         node.error(err.message);
     };
 
-    function ClearbitExecuteNode(config) {
-        RED.nodes.createNode(this, config);
-        this.host = RED.nodes.getNode(config.host);
-        this.client = require('clearbit')(this.host.api_key);
-
-
+    function MyExecuteNode(config) {
         const node = this;
-        const requiredArgs = ['resource', 'method', 'args'];
+        RED.nodes.createNode(node, config);
+        node.client = require('torrent-search-api');
+
+        const requiredArgs = ['method', 'args'];
         node.on('input', function(msg) {
-            node.status({ fill: "blue", shape: "dot", text: `Try ${msg.payload.resource}.${msg.payload.method}...` });
+            node.status({ fill: "blue", shape: "dot", text: `Try ${msg.payload.method}...` });
 
             var validation = requiredArgs.reduce((p, v) => {
                 if (!msg.payload[v]) {
@@ -30,28 +28,54 @@ module.exports = function(RED) {
             if (!validation)
                 return false;
 
-            if (!node.client[msg.payload.resource]) {
-                return handle_error(new Error(`Resource ${msg.payload.resource} is invalid, check documentation, cancel`), node);
-            }
-
-            if (!node.client[msg.payload.resource][msg.payload.method]) {
-                return handle_error(new Error(`Resource ${msg.payload.resource}.${msg.payload.method} is invalid, check documentation, cancel`), node);
+            if (!node.client[msg.payload.method]) {
+                return handle_error(new Error(`Method ${msg.payload.method} is invalid, check documentation, cancel`), node);
             }
 
             msg['_original'] = msg.payload;
-            node.client[msg.payload.resource][msg.payload.method](msg.payload.args)
+            const isAsync = (node.client[msg.payload.method]).constructor.name === "AsyncFunction";
+            if(isAsync){
+                node.client[msg.payload.method](...msg.payload.args)
                 .then(function(data) {
-                    node.status({ fill: "green", shape: "dot", text: `Success ${msg.payload.resource}.${msg.payload.method} !` });
+                    node.status({ fill: "green", shape: "dot", text: `Success async ${msg.payload.method} !` });
                     msg.payload = data;
                     node.send(msg);
                 })
                 .catch(function(err) {
-                    // Email address could not be found
                     handle_error(err, node);
                     msg.payload = false;
                     node.send(msg);
                 })
+            }else{
+                var data = node.client[msg.payload.method](...msg.payload.args);
+                if(data){
+                    if(!(data instanceof Promise) && !data['then']){
+                        console.log('is not Promise');
+                        node.status({ fill: "green", shape: "dot", text: `Success sync ${msg.payload.method} !` });
+                        msg.payload = data;
+                        return node.send(msg);
+                    }
+                    else{
+                        var asyncResult = data;
+                        asyncResult
+                        .then(function(data) {
+                            node.status({ fill: "green", shape: "dot", text: `Success async ${msg.payload.method} !` });
+                            msg.payload = data;
+                            node.send(msg);
+                        })
+                        .catch(function(err) {
+                            handle_error(err, node);
+                            msg.payload = false;
+                            node.send(msg);
+                        })
+                    }
+                }else{
+                    node.status({ fill: "green", shape: "dot", text: `Success async ${msg.payload.method} !` });
+                    msg.payload = data;
+                    node.send(msg);
+                }
+            }
         });
     }
-    RED.nodes.registerType("clearbit-execute", ClearbitExecuteNode);
+    RED.nodes.registerType("torrent-search-api-execute", MyExecuteNode);
 };
