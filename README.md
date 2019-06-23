@@ -35,7 +35,7 @@ You only need to provde 2 parameters in the payload of your messages:
         args: [torrent]
     }
 }
-```xw
+```
 
 An example of flow in node-red which does a search based on terms and provideres list, then return torrents WITH their magnets url. 
 Results:
